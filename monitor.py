@@ -1,127 +1,186 @@
 import os
+import csv
 import json
 import datetime as dt
+from dataclasses import dataclass
+from typing import Optional, List, Dict
+
 import pandas as pd
 import yfinance as yf
 
-from line_push import line_push
+from line_push import push_message
 from render_dashboard import render
 
-ZONES_CSV = os.getenv("ZONES_CSV", "zones.csv")
-STATE_PATH = os.getenv("STATE_PATH", ".state/state.json")
-NEAR_PCT = float(os.getenv("NEAR_PCT", "5"))
 
-def load_state():
-    if os.path.exists(STATE_PATH):
-        with open(STATE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {"last_sent": None}
+JST = dt.timezone(dt.timedelta(hours=9))
 
-def save_state(state):
-    os.makedirs(os.path.dirname(STATE_PATH), exist_ok=True)
-    with open(STATE_PATH, "w", encoding="utf-8") as f:
-        json.dump(state, f, ensure_ascii=False)
 
-def sent_today(state):
-    return state.get("last_sent") == dt.date.today().isoformat()
+@dataclass
+class ZoneRow:
+    ticker: str
+    name: str
+    zone_low: float
+    zone_high: float
 
-def mark_sent_today(state):
-    state["last_sent"] = dt.date.today().isoformat()
-    return state
 
-def classify(price, low, high):
+def jst_today_key() -> str:
+    return dt.datetime.now(JST).strftime("%Y-%m-%d")
+
+
+def load_zones(csv_path: str) -> List[ZoneRow]:
+    rows: List[ZoneRow] = []
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            ticker = (r.get("Ticker") or "").strip().upper()
+            name = (r.get("Name") or "").strip() or ticker
+            zone_low = float((r.get("ZoneLow") or "").strip())
+            zone_high = float((r.get("ZoneHigh") or "").strip())
+            rows.append(ZoneRow(ticker, name, zone_low, zone_high))
+    return rows
+
+
+def fetch_last_price_yf(ticker: str) -> Optional[float]:
+    """
+    Fetch last close-ish price using yfinance.
+    Uses short intraday window if possible; falls back to 1d daily.
+    """
+    try:
+        t = yf.Ticker(ticker)
+
+        # Try intraday first
+        hist = t.history(period="1d", interval="1m")
+        if hist is not None and not hist.empty:
+            v = hist["Close"].iloc[-1]
+            if pd.notna(v):
+                return float(v)
+
+        # Fallback: daily
+        hist2 = t.history(period="5d", interval="1d")
+        if hist2 is not None and not hist2.empty:
+            v = hist2["Close"].iloc[-1]
+            if pd.notna(v):
+                return float(v)
+
+    except Exception:
+        pass
+    return None
+
+
+def classify(price: Optional[float], low: float, high: float, near_pct: float) -> str:
     if price is None:
         return "—"
     if low <= price <= high:
         return "IN_ZONE"
-    if price > high and (price / high - 1.0) * 100.0 <= NEAR_PCT:
-        return "NEAR"
+
+    # "NEAR" means close to the zone boundary (outside but within near_pct%)
+    # If price is above high: near if within high*(1+near_pct/100)
+    # If price is below low: near if within low*(1-near_pct/100)
+    if price > high:
+        if price <= high * (1.0 + near_pct / 100.0):
+            return "NEAR"
+    else:  # price < low
+        if price >= low * (1.0 - near_pct / 100.0):
+            return "NEAR"
+
     return "—"
 
-def fetch_last_prices(tickers):
-    df = yf.download(
-        tickers=tickers,
-        period="7d",
-        interval="1d",
-        auto_adjust=True,
-        progress=False,
-        threads=True,
-    )
-    last = {}
-    for t in tickers:
-        try:
-            last[t] = float(df[t]["Close"].dropna().iloc[-1])
-        except Exception:
-            last[t] = None
-    return last
 
-def build_message(hits: pd.DataFrame, pages_url: str) -> str:
-    lines = []
+def load_state(path: str) -> Dict:
+    if not os.path.exists(path):
+        return {"last_sent_day": None, "last_sent_hits": []}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"last_sent_day": None, "last_sent_hits": []}
 
-    inz = hits[hits["Status"] == "IN_ZONE"]
-    nr = hits[hits["Status"] == "NEAR"]
 
-    if not inz.empty:
-        lines.append("✅【底値目安ゾーン突入】")
-        for _, r in inz.iterrows():
-            lines.append(f"- {r['Name']}({r['Ticker']}): {r['LastPrice']:.2f} 目安 {r['ZoneLow']}-{r['ZoneHigh']}")
-        lines.append("")
+def save_state(path: str, state: Dict):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
 
-    if not nr.empty:
-        lines.append(f"👀【ゾーン接近（上限+{NEAR_PCT:.0f}%以内）】")
-        for _, r in nr.iterrows():
-            lines.append(f"- {r['Name']}({r['Ticker']}): {r['LastPrice']:.2f} 目安 {r['ZoneLow']}-{r['ZoneHigh']}")
-        lines.append("")
 
-    lines.append(f"🔗 一覧（全銘柄＋チャート）: {pages_url}")
-    lines.append("※今日はこの1回だけ通知（該当時のみ）")
-    return "\n".join(lines).strip()
+def build_message(hits_df: pd.DataFrame, dashboard_url: str) -> str:
+    # Make a compact message for LINE
+    lines = ["📉 底値アラート（該当あり）"]
+    for _, r in hits_df.iterrows():
+        price = r["LastPrice"]
+        price_disp = "—" if price is None or pd.isna(price) else f"{float(price):.2f}"
+        lines.append(f"- {r['Name']}({r['Ticker']}): {price_disp} / {float(r['ZoneLow']):.2f}-{float(r['ZoneHigh']):.2f} [{r['Status']}]")
+    lines.append("")
+    lines.append(f"一覧: {dashboard_url}")
+    return "\n".join(lines)
+
 
 def main():
-    state = load_state()
-    if sent_today(state):
-        print("Already sent today. Skip.")
-        return
+    # Inputs
+    zones_csv = os.getenv("ZONES_CSV", "zones.csv")
+    out_html = os.getenv("DASHBOARD_OUT", "docs/index.html")
 
-    zones = pd.read_csv(ZONES_CSV)
-    zones["Ticker"] = zones["Ticker"].astype(str).str.upper()
-
-    tickers = zones["Ticker"].dropna().unique().tolist()
-    if not tickers:
-        print("No tickers in zones.csv")
-        return
-
-    prices = fetch_last_prices(tickers)
-
-    zones["LastPrice"] = zones["Ticker"].map(prices)
-    zones["Status"] = zones.apply(
-        lambda r: classify(r["LastPrice"], float(r["ZoneLow"]), float(r["ZoneHigh"])),
-        axis=1,
+    # Pages URL (you can set this in repo variables if you want)
+    github_owner = os.getenv("GITHUB_OWNER", "Shunsuke-Taken")
+    github_repo = os.getenv("GITHUB_REPO", "stock-bottom-alert")
+    dashboard_url = os.getenv(
+        "DASHBOARD_URL",
+        f"https://{github_owner.lower()}.github.io/{github_repo}/"
     )
 
-    # Pages用HTMLを常に更新（全銘柄）
-    render(
-        zones[["Ticker", "Name", "ZoneLow", "ZoneHigh", "LastPrice", "Status"]],
-        "docs/index.html",
-    )
+    # Near threshold percent (empty-safe)
+    near_pct = float(os.getenv("NEAR_PCT") or "5")
 
-    hits = zones[zones["Status"].isin(["IN_ZONE", "NEAR"])].copy()
+    # State (for 1/day max)
+    state_path = os.getenv("STATE_PATH", ".state/state.json")
+    state = load_state(state_path)
+    today = jst_today_key()
+
+    zones = load_zones(zones_csv)
+
+    # Fetch prices & evaluate
+    records = []
+    for z in zones:
+        price = fetch_last_price_yf(z.ticker)
+        status = classify(price, z.zone_low, z.zone_high, near_pct)
+        records.append(
+            {
+                "Ticker": z.ticker,
+                "Name": z.name,
+                "ZoneLow": z.zone_low,
+                "ZoneHigh": z.zone_high,
+                "LastPrice": price,
+                "Status": status,
+            }
+        )
+
+    df = pd.DataFrame(records)
+
+    # Render dashboard every run
+    render(df, out_html)
+
+    # Decide hits
+    hits = df[df["Status"].isin(["IN_ZONE", "NEAR"])].copy()
+
     if hits.empty:
         print("No hits today. No message sent.")
         return
 
-    repo = os.getenv("GITHUB_REPOSITORY", "")
-    if repo and "/" in repo:
-        owner, name = repo.split("/", 1)
-        pages_url = f"https://{owner}.github.io/{name}/"
-    else:
-        pages_url = "(Pages URL not available)"
+    # 1/day cap: if already sent today, skip
+    if state.get("last_sent_day") == today:
+        print("Already sent today. Skip.")
+        return
 
-    msg = build_message(hits, pages_url)
-    line_push(msg)
+    # Send LINE
+    msg = build_message(hits, dashboard_url)
+    push_message(msg)
 
-    save_state(mark_sent_today(state))
+    # Update state
+    state["last_sent_day"] = today
+    state["last_sent_hits"] = hits[["Ticker", "Status"]].to_dict(orient="records")
+    save_state(state_path, state)
+
     print("Sent alert and updated state.")
+
 
 if __name__ == "__main__":
     main()
