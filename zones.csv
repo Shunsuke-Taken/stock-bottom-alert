@@ -1,5 +1,5 @@
 Ticker,Name,ZoneLow,ZoneHigh
-OKLO,Oklo,0,1000000
+OKLO,Oklo,0,999999
 MRVL,Marvell,45,60
 RKLB,Rocket Lab,30,40
 NET,Cloudflare,55,70
