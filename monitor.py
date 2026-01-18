@@ -195,7 +195,8 @@ def build_message(hits_df: pd.DataFrame, dashboard_url: str, near_pct: float) ->
         lines.append("")
 
     if dashboard_url:
-        lines.append(f"一覧: {dashboard_url}")
+        cache_bust = dt.datetime.now(JST).strftime("%Y%m%d%H%M")
+        lines.append(f"一覧: {dashboard_url}?v={cache_bust}")
 
     return "\n".join(lines).strip()
 
