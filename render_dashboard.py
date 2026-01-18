@@ -378,6 +378,34 @@ tbody td {{
   tbody td {{ padding: 10px; }}
   .btn {{ padding: 7px 9px; border-radius: 9px; }}
 }}
+
+.table-scroll{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table{
+  min-width: 860px; /* これで右端列が潰れない */
+}
+
+.col-link{
+  white-space: nowrap;
+}
+
+.btn{
+  margin-right: 8px;
+}
+
+@media (max-width: 640px){
+  /* スマホはボタンを縦積みにしてタップしやすくする */
+  .col-link .btn{
+    display: block;
+    margin: 0 0 8px 0;
+    width: 100%;
+    text-align: center;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -396,21 +424,23 @@ tbody td {{
 </div>
 
 <div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 34%;">銘柄</th>
-        <th style="width: 18%;">現在値 / ゾーン</th>
-        <th style="width: 10%;">7日%</th>
-        <th style="width: 10%;">30日%</th>
-        <th style="width: 10%;">90日%</th>
-        <th style="width: 18%;">リンク</th>
-      </tr>
-    </thead>
-    <tbody>
-      {''.join(rows)}
-    </tbody>
-  </table>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 34%;">銘柄</th>
+            <th style="width: 18%;">現在値 / ゾーン</th>
+            <th style="width: 10%;">7日%</th>
+            <th style="width: 10%;">30日%</th>
+            <th style="width: 10%;">90日%</th>
+            <th style="width: 18%;">リンク</th>
+          </tr>
+        </thead>
+        <tbody>
+          {''.join(rows)}
+        </tbody>
+      </table>
+    </div>
 </div>
 
 <div class="footer">
