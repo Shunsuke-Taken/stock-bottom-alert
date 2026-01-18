@@ -1,7 +1,15 @@
 Ticker,Name,ZoneLow,ZoneHigh
-OKLO,Oklo,0,999999
-MRVL,Marvell,0,999999
-RKLB,Rocket Lab,30,40
+SATS,EchoStar,10,999999
+RKLB,Rocket Lab,4,6
+ASTS,AST SpaceMobile,2,4
+IONQ,IonQ,6,9
+QUBT,Quantum Computing Inc,1,2
+KTOS,Kratos Defense & Security Solutions,15,18
 NET,Cloudflare,55,70
-IONQ,IonQ,12,22
-CCJ,Cameco,25,35
+BWXT,BWX Technologies,65,80
+SMR,NuScale Power,3,5
+OKLO,Oklo,7,10
+CCJ,Cameco,35,45
+COHR,Coherent,35,50
+LITE,Lumentum,35,45
+MRVL,Marvell Technology,45,60
