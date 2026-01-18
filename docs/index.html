@@ -5,162 +5,474 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>底値目安ダッシュボード</title>
 <style>
-body {
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  margin: 20px;
+:root {
+  --bg: #0b1020;
+  --card: rgba(255,255,255,0.06);
+  --card2: rgba(255,255,255,0.04);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.62);
+  --line: rgba(255,255,255,0.12);
+  --zone: rgba(34,197,94,0.22);
+  --near: rgba(245,158,11,0.20);
+  --none: rgba(255,255,255,0.03);
+
+  --pos: rgba(34,197,94,0.95);
+  --neg: rgba(239,68,68,0.95);
+  --zero: rgba(255,255,255,0.75);
+  --na: rgba(255,255,255,0.45);
 }
-h1 { font-size: 20px; margin-bottom: 8px; }
-p  { margin-top: 0; color: #333; }
-table { border-collapse: collapse; width: 100%; }
-th, td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
-tr.ok { background: #f0fff4; }
-tr.near { background: #fffaf0; }
-summary { cursor: pointer; }
-small { color: #666; }
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 18px;
+  background: radial-gradient(1200px 600px at 20% 0%, rgba(99,102,241,0.25), transparent),
+              radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,0.18), transparent),
+              var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.header {
+  max-width: 1100px;
+  margin: 0 auto 14px auto;
+  padding: 14px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.h-title {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pills {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card2);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot-zone { background: rgba(34,197,94,0.95); }
+.dot-near { background: rgba(245,158,11,0.95); }
+.dot-all { background: rgba(99,102,241,0.9); }
+
+.table-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--card);
+  backdrop-filter: blur(10px);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: rgba(11,16,32,0.92);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+tbody td {
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.row-zone { background: var(--zone); }
+.row-near { background: var(--near); }
+.row-none { background: var(--none); }
+
+.name-wrap { display: flex; flex-direction: column; gap: 6px; }
+.name-top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.name { font-weight: 700; font-size: 14px; }
+.ticker { font-size: 12px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.price { font-size: 14px; font-weight: 700; }
+.zone { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  width: fit-content;
+}
+.badge-zone { background: rgba(34,197,94,0.18); color: rgba(34,197,94,0.95); }
+.badge-near { background: rgba(245,158,11,0.18); color: rgba(245,158,11,0.95); }
+.badge-none { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+.pct {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+.pct-label {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pct-pos { color: var(--pos); }
+.pct-neg { color: var(--neg); }
+.pct-zero { color: var(--zero); }
+.pct-na { color: var(--na); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  margin-right: 8px;
+}
+.btn:hover { background: rgba(255,255,255,0.12); }
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.06); }
+
+.footer {
+  max-width: 1100px;
+  margin: 12px auto 0 auto;
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 820px) {
+  thead th:nth-child(3),
+  thead th:nth-child(4),
+  thead th:nth-child(5),
+  tbody td:nth-child(3),
+  tbody td:nth-child(4),
+  tbody td:nth-child(5) {
+    width: 90px;
+  }
+}
+
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  .table-wrap { border-radius: 12px; }
+  thead th { font-size: 11px; padding: 10px; }
+  tbody td { padding: 10px; }
+  .btn { padding: 7px 9px; border-radius: 9px; }
+}
 </style>
 </head>
 <body>
 
-<h1>底値目安ダッシュボード</h1>
-<p>最終更新: 2026-01-18 07:52 JST</p>
+<div class="header">
+  <div class="h-title">
+    <h1>底値目安ダッシュボード</h1>
+    <div class="meta">最終更新: 2026-01-18 10:12 JST</div>
+  </div>
 
-<table>
-<thead>
-<tr>
-  <th>銘柄（クリックでチャート表示）</th>
-  <th>現在値</th>
-  <th>目安ゾーン</th>
-  <th>状態</th>
-</tr>
-</thead>
-<tbody>
+  <div class="pills">
+    <div class="pill"><span class="dot dot-all"></span>対象: 6 銘柄</div>
+    <div class="pill"><span class="dot dot-zone"></span>IN_ZONE: 1</div>
+    <div class="pill"><span class="dot dot-near"></span>NEAR: 0</div>
+  </div>
+</div>
 
-<tr class="ok">
-  <td>
-    <details>
-      <summary><strong>Oklo</strong> (OKLO)</summary>
-      <div style="margin-top:10px">
-        <iframe
-          src="https://finance.yahoo.com/chart/OKLO?range=6mo&interval=1d&indicators=quote&includeAdjustedClose=true"
-          width="100%"
-          height="420"
-          style="border:0"
-          loading="lazy">
-        </iframe>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 34%;">銘柄</th>
+        <th style="width: 18%;">現在値 / ゾーン</th>
+        <th style="width: 10%;">7日%</th>
+        <th style="width: 10%;">30日%</th>
+        <th style="width: 10%;">90日%</th>
+        <th style="width: 18%;">リンク</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+<tr class="row-zone">
+  <td class="col-name">
+    <div class="name-wrap">
+      <div class="name-top">
+        <span class="name">Oklo</span>
+        <span class="ticker">OKLO</span>
       </div>
-    </details>
-  </td>
-  <td>94.92</td>
-  <td>0.00 – 999999.00</td>
-  <td>IN_ZONE</td>
-</tr>
-
-<tr class="">
-  <td>
-    <details>
-      <summary><strong>Marvell</strong> (MRVL)</summary>
-      <div style="margin-top:10px">
-        <iframe
-          src="https://finance.yahoo.com/chart/MRVL?range=6mo&interval=1d&indicators=quote&includeAdjustedClose=true"
-          width="100%"
-          height="420"
-          style="border:0"
-          loading="lazy">
-        </iframe>
+      <div class="name-sub">
+        <span class="badge badge-zone">IN_ZONE</span>
       </div>
-    </details>
+    </div>
   </td>
-  <td>80.46</td>
-  <td>45.00 – 60.00</td>
-  <td>—</td>
+
+  <td class="col-price">
+    <div class="mono price">94.92</div>
+    <div class="mono zone">0.00 – 999999.00</div>
+  </td>
+
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">7d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">30d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">90d</div>
+  </td>
+
+  <td class="col-link">
+    <a class="btn" href="https://finance.yahoo.com/chart/OKLO?range=6mo&interval=1d" target="_blank" rel="noopener">チャート</a>
+    <a class="btn btn-ghost" href="https://finance.yahoo.com/quote/OKLO" target="_blank" rel="noopener">詳細</a>
+  </td>
 </tr>
 
-<tr class="">
-  <td>
-    <details>
-      <summary><strong>Rocket Lab</strong> (RKLB)</summary>
-      <div style="margin-top:10px">
-        <iframe
-          src="https://finance.yahoo.com/chart/RKLB?range=6mo&interval=1d&indicators=quote&includeAdjustedClose=true"
-          width="100%"
-          height="420"
-          style="border:0"
-          loading="lazy">
-        </iframe>
+<tr class="row-none">
+  <td class="col-name">
+    <div class="name-wrap">
+      <div class="name-top">
+        <span class="name">Marvell</span>
+        <span class="ticker">MRVL</span>
       </div>
-    </details>
-  </td>
-  <td>96.18</td>
-  <td>30.00 – 40.00</td>
-  <td>—</td>
-</tr>
-
-<tr class="">
-  <td>
-    <details>
-      <summary><strong>Cloudflare</strong> (NET)</summary>
-      <div style="margin-top:10px">
-        <iframe
-          src="https://finance.yahoo.com/chart/NET?range=6mo&interval=1d&indicators=quote&includeAdjustedClose=true"
-          width="100%"
-          height="420"
-          style="border:0"
-          loading="lazy">
-        </iframe>
+      <div class="name-sub">
+        <span class="badge badge-none">—</span>
       </div>
-    </details>
+    </div>
   </td>
-  <td>184.09</td>
-  <td>55.00 – 70.00</td>
-  <td>—</td>
+
+  <td class="col-price">
+    <div class="mono price">80.46</div>
+    <div class="mono zone">45.00 – 60.00</div>
+  </td>
+
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">7d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">30d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">90d</div>
+  </td>
+
+  <td class="col-link">
+    <a class="btn" href="https://finance.yahoo.com/chart/MRVL?range=6mo&interval=1d" target="_blank" rel="noopener">チャート</a>
+    <a class="btn btn-ghost" href="https://finance.yahoo.com/quote/MRVL" target="_blank" rel="noopener">詳細</a>
+  </td>
 </tr>
 
-<tr class="">
-  <td>
-    <details>
-      <summary><strong>IonQ</strong> (IONQ)</summary>
-      <div style="margin-top:10px">
-        <iframe
-          src="https://finance.yahoo.com/chart/IONQ?range=6mo&interval=1d&indicators=quote&includeAdjustedClose=true"
-          width="100%"
-          height="420"
-          style="border:0"
-          loading="lazy">
-        </iframe>
+<tr class="row-none">
+  <td class="col-name">
+    <div class="name-wrap">
+      <div class="name-top">
+        <span class="name">Rocket Lab</span>
+        <span class="ticker">RKLB</span>
       </div>
-    </details>
-  </td>
-  <td>50.80</td>
-  <td>12.00 – 22.00</td>
-  <td>—</td>
-</tr>
-
-<tr class="">
-  <td>
-    <details>
-      <summary><strong>Cameco</strong> (CCJ)</summary>
-      <div style="margin-top:10px">
-        <iframe
-          src="https://finance.yahoo.com/chart/CCJ?range=6mo&interval=1d&indicators=quote&includeAdjustedClose=true"
-          width="100%"
-          height="420"
-          style="border:0"
-          loading="lazy">
-        </iframe>
+      <div class="name-sub">
+        <span class="badge badge-none">—</span>
       </div>
-    </details>
+    </div>
   </td>
-  <td>116.43</td>
-  <td>25.00 – 35.00</td>
-  <td>—</td>
+
+  <td class="col-price">
+    <div class="mono price">96.18</div>
+    <div class="mono zone">30.00 – 40.00</div>
+  </td>
+
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">7d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">30d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">90d</div>
+  </td>
+
+  <td class="col-link">
+    <a class="btn" href="https://finance.yahoo.com/chart/RKLB?range=6mo&interval=1d" target="_blank" rel="noopener">チャート</a>
+    <a class="btn btn-ghost" href="https://finance.yahoo.com/quote/RKLB" target="_blank" rel="noopener">詳細</a>
+  </td>
 </tr>
 
-</tbody>
-</table>
+<tr class="row-none">
+  <td class="col-name">
+    <div class="name-wrap">
+      <div class="name-top">
+        <span class="name">Cloudflare</span>
+        <span class="ticker">NET</span>
+      </div>
+      <div class="name-sub">
+        <span class="badge badge-none">—</span>
+      </div>
+    </div>
+  </td>
 
-<p style="margin-top:20px;">
-  <small>IN_ZONE = 底値目安内 / NEAR = 上限付近（接近） / — = 対象外 or 取得失敗</small>
-</p>
+  <td class="col-price">
+    <div class="mono price">184.09</div>
+    <div class="mono zone">55.00 – 70.00</div>
+  </td>
+
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">7d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">30d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">90d</div>
+  </td>
+
+  <td class="col-link">
+    <a class="btn" href="https://finance.yahoo.com/chart/NET?range=6mo&interval=1d" target="_blank" rel="noopener">チャート</a>
+    <a class="btn btn-ghost" href="https://finance.yahoo.com/quote/NET" target="_blank" rel="noopener">詳細</a>
+  </td>
+</tr>
+
+<tr class="row-none">
+  <td class="col-name">
+    <div class="name-wrap">
+      <div class="name-top">
+        <span class="name">IonQ</span>
+        <span class="ticker">IONQ</span>
+      </div>
+      <div class="name-sub">
+        <span class="badge badge-none">—</span>
+      </div>
+    </div>
+  </td>
+
+  <td class="col-price">
+    <div class="mono price">50.80</div>
+    <div class="mono zone">12.00 – 22.00</div>
+  </td>
+
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">7d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">30d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">90d</div>
+  </td>
+
+  <td class="col-link">
+    <a class="btn" href="https://finance.yahoo.com/chart/IONQ?range=6mo&interval=1d" target="_blank" rel="noopener">チャート</a>
+    <a class="btn btn-ghost" href="https://finance.yahoo.com/quote/IONQ" target="_blank" rel="noopener">詳細</a>
+  </td>
+</tr>
+
+<tr class="row-none">
+  <td class="col-name">
+    <div class="name-wrap">
+      <div class="name-top">
+        <span class="name">Cameco</span>
+        <span class="ticker">CCJ</span>
+      </div>
+      <div class="name-sub">
+        <span class="badge badge-none">—</span>
+      </div>
+    </div>
+  </td>
+
+  <td class="col-price">
+    <div class="mono price">116.43</div>
+    <div class="mono zone">25.00 – 35.00</div>
+  </td>
+
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">7d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">30d</div>
+  </td>
+  <td class="col-pct">
+    <div class="pct pct-na">—</div>
+    <div class="pct-label">90d</div>
+  </td>
+
+  <td class="col-link">
+    <a class="btn" href="https://finance.yahoo.com/chart/CCJ?range=6mo&interval=1d" target="_blank" rel="noopener">チャート</a>
+    <a class="btn btn-ghost" href="https://finance.yahoo.com/quote/CCJ" target="_blank" rel="noopener">詳細</a>
+  </td>
+</tr>
+
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  IN_ZONE = 底値目安内 / NEAR = 境界の±NEAR_PCT%以内（ゾーン外） / 7/30/90日%は直近の取引日終値基準（休日は直前取引日に寄せます）
+</div>
 
 </body>
 </html>
