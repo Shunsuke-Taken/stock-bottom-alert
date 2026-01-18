@@ -121,7 +121,6 @@ def render(df: pd.DataFrame, out_path: str):
 
         # Links
         quote_url = f"https://finance.yahoo.com/quote/{ticker}"
-        chart_url = f"https://finance.yahoo.com/chart/{ticker}?range=6mo&interval=1d"
 
         # Row highlight
         tr_cls = "row-zone" if status == "IN_ZONE" else ("row-near" if status == "NEAR" else "row-none")
@@ -159,7 +158,6 @@ def render(df: pd.DataFrame, out_path: str):
   </td>
 
   <td class="col-link">
-    <a class="btn" href="{chart_url}" target="_blank" rel="noopener">チャート</a>
     <a class="btn btn-ghost" href="{quote_url}" target="_blank" rel="noopener">詳細</a>
   </td>
 </tr>
