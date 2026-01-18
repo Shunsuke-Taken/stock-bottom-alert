@@ -1,6 +1,6 @@
 Ticker,Name,ZoneLow,ZoneHigh
 OKLO,Oklo,0,999999
-MRVL,Marvell,45,60
+MRVL,Marvell,0,999999
 RKLB,Rocket Lab,30,40
 NET,Cloudflare,55,70
 IONQ,IonQ,12,22
