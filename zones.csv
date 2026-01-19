@@ -1,7 +1,7 @@
 Ticker,Name,ZoneLow,ZoneHigh
 SATS,EchoStar,10,999999
 RKLB,Rocket Lab,4,999999
-ASTS,AST SpaceMobile,2,4
+ASTS,AST SpaceMobile,2,999999
 IONQ,IonQ,6,9
 QUBT,Quantum Computing Inc,1,2
 KTOS,Kratos Defense & Security Solutions,15,18
