@@ -1,15 +1,16 @@
 Ticker,Name,ZoneLow,ZoneHigh
-SATS,EchoStar,10,999999
-RKLB,Rocket Lab,4,999999
-ASTS,AST SpaceMobile,2,999999
-IONQ,IonQ,6,9
-QUBT,Quantum Computing Inc,1,2
-KTOS,Kratos Defense & Security Solutions,15,18
-NET,Cloudflare,55,70
-BWXT,BWX Technologies,65,80
-SMR,NuScale Power,3,5
-OKLO,Oklo,7,10
-CCJ,Cameco,35,45
-COHR,Coherent,35,50
-LITE,Lumentum,35,45
-MRVL,Marvell Technology,45,60
+SATS,EchoStar,11.92,16.39
+RKLB,Rocket Lab,11.77,16.18
+ASTS,AST SpaceMobile,14.58,20.04
+IONQ,IonQ,14.30,19.67
+QUBT,Quantum Computing Inc,3.50,4.81
+KTOS,Kratos Defense & Security Solutions,19.12,26.29
+NET,Cloudflare,71.54,98.36
+BWXT,BWX Technologies,67.37,92.63
+SMR,NuScale Power,8.86,12.19
+OKLO,Oklo,13.94,19.16
+CCJ,Cameco,28.00,38.50
+COHR,Coherent,36.46,50.14
+LITE,Lumentum,36.52,50.22
+MRVL,Marvell Technology,37.67,51.80
+
